@@ -17,11 +17,11 @@
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col">
 
-  <!-- ================= GOOGLE APPS SCRIPT URL ================= -->
+  <!-- ================= GOOGLE APPS SCRIPT URL CỦA THẦY ================= -->
   <script>
     const GOOGLE_SHEETS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybtBmrxpoL3F-OQbbGEvMU3oN25LkWmXO9TclVoF02ACDXBESdgC01clO-t4LobS1g-Q/exec";
   </script>
-  <!-- ========================================================== -->
+  <!-- ============================================================================== -->
 
   <!-- Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
@@ -175,13 +175,6 @@
   </footer>
 
   <script>
-    // Dữ liệu câu hỏi dự phòng nếu kết nối Google Sheet quá lâu
-    const fallbackQuestions = [
-      { id: 1, question: "Thủ đô của Việt Nam là gì?", options: ["Đà Nẵng", "TP. Hồ Chí Minh", "Hà Nội", "Cần Thơ"], correct: "C", explanation: "Hà Nội là thủ đô của Việt Nam." },
-      { id: 2, question: "She _____ to school every day.", options: ["go", "goes", "going", "gone"], correct: "B", explanation: "Chủ ngữ She đi với động từ thêm 'es'." },
-      { id: 3, question: "Kết quả của phép tính 2 + 2 x 2 là bao nhiêu?", options: ["8", "6", "4", "10"], correct: "B", explanation: "Nhân chia trước, cộng trừ sau: 2 + 4 = 6." }
-    ];
-
     let rawQuestions = [];
     let activeQuestions = [];
     let userAnswers = {};
@@ -189,40 +182,36 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
-      fetchQuestionsWithTimeout();
+      fetchQuestionsFromSheets();
     });
 
-    async function fetchQuestionsWithTimeout() {
+    async function fetchQuestionsFromSheets() {
       const statusBadge = document.getElementById('status-badge');
       const statusDot = document.getElementById('status-dot');
       const statusText = document.getElementById('status-text');
       const btnStart = document.getElementById('btn-start');
 
-      // Cài đặt thời gian chờ tối đa 6 giây
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-
       try {
-        const response = await fetch(GOOGLE_SHEETS_SCRIPT_URL, { signal: controller.signal });
-        clearTimeout(timeoutId);
+        const response = await fetch(GOOGLE_SHEETS_SCRIPT_URL);
         const data = await response.json();
 
-        if (Array.isArray(data) && data.length > 0) {
-          rawQuestions = data;
+        // Lọc bỏ những dòng câu hỏi bị trống
+        const validQuestions = data.filter(q => q.question && q.question.trim() !== "");
+
+        if (Array.isArray(validQuestions) && validQuestions.length > 0) {
+          rawQuestions = validQuestions;
           statusDot.className = "w-2 h-2 rounded-full bg-emerald-500";
           statusText.innerText = `Đã kết nối (${rawQuestions.length} câu)`;
           statusBadge.className = "flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full text-xs font-medium text-emerald-700";
           btnStart.disabled = false;
         } else {
-          throw new Error("Dữ liệu rỗng");
+          throw new Error("Không tìm thấy câu hỏi hợp lệ");
         }
       } catch (err) {
-        console.warn("Không kết nối được Google Sheet, chuyển sang bộ câu hỏi dự phòng:", err);
-        rawQuestions = fallbackQuestions;
-        statusDot.className = "w-2 h-2 rounded-full bg-blue-500";
-        statusText.innerText = "Đã sẵn sàng (Chế độ dự phòng)";
-        statusBadge.className = "flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-full text-xs font-medium text-blue-700";
-        btnStart.disabled = false;
+        console.error(err);
+        statusDot.className = "w-2 h-2 rounded-full bg-red-500";
+        statusText.innerText = "Lỗi kết nối cơ sở dữ liệu";
+        statusBadge.className = "flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-full text-xs font-medium text-red-600";
       }
     }
 
@@ -236,12 +225,20 @@
       
       activeQuestions = selectedRaw.map(q => {
         const originalLetters = ['A', 'B', 'C', 'D'];
-        const correctIndex = originalLetters.indexOf(q.correct);
-        const correctText = q.options[correctIndex !== -1 ? correctIndex : 0];
+        // Lấy chữ cái đáp án chuẩn (viết hoa)
+        const correctLetter = (q.correct || 'A').toString().trim().toUpperCase();
+        const correctIndex = originalLetters.indexOf(correctLetter);
+        
+        // Lấy văn bản của đáp án đúng
+        const correctText = (correctIndex !== -1 && q.options[correctIndex]) ? q.options[correctIndex] : q.options[0];
 
-        let optionsList = q.options.map((text, idx) => ({ text, originalLetter: originalLetters[idx] })).filter(item => item.text !== "");
+        // Tạo mảng lựa chọn hợp lệ
+        let optionsList = q.options.map((text, idx) => ({ text, originalLetter: originalLetters[idx] })).filter(item => item.text !== "" && item.text !== null && item.text !== undefined);
+        
+        // Trộn ngẫu nhiên đáp án
         let shuffledOptions = shuffleArray(optionsList);
 
+        // Tìm lại vị trí chữ cái mới của đáp án đúng
         let newCorrectIndex = shuffledOptions.findIndex(item => item.text === correctText);
         let newCorrectLetter = originalLetters[newCorrectIndex !== -1 ? newCorrectIndex : 0];
 
@@ -249,7 +246,7 @@
           question: q.question,
           options: shuffledOptions.map(item => item.text),
           correct: newCorrectLetter,
-          explanation: q.explanation
+          explanation: q.explanation || ""
         };
       });
 
