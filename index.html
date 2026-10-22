@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hệ Thống Trắc Nghiệm Online - EduQuiz</title>
+  <title>Hệ Thống Trắc Nghiệm Online - Thầy Đạt (THCS Ngô Gia Tự)</title>
   <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -17,21 +17,26 @@
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col">
 
-  <!-- ================= DÁN GOOGLE APPS SCRIPT URL CỦA BẠN VÀO ĐÂY ================= -->
+  <!-- ================= GOOGLE APPS SCRIPT URL CỦA THẦY ================= -->
   <script>
     const GOOGLE_SHEETS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybtBmrxpoL3F-OQbbGEvMU3oN25LkWmXO9TclVoF02ACDXBESdgC01clO-t4LobS1g-Q/exec";
   </script>
   <!-- ============================================================================== -->
 
-  <!-- Header -->
+  <!-- Header có tên Thầy Đạt & Trường THCS Ngô Gia Tự -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
     <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center gap-3">
-        <div class="bg-blue-600 text-white p-2 rounded-xl shadow-md shadow-blue-500/20">
+        <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-md shadow-blue-500/20">
           <i data-lucide="graduation-cap" class="w-6 h-6"></i>
         </div>
         <div>
-          <h1 class="font-bold text-lg text-slate-800 leading-tight">EduQuiz Online</h1>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg text-slate-800 leading-tight">EduQuiz Online</h1>
+            <span class="bg-blue-100 text-blue-800 text-[11px] font-bold px-2 py-0.5 rounded-md border border-blue-200">
+              Thầy Đạt - THCS Ngô Gia Tự
+            </span>
+          </div>
           <p class="text-xs text-slate-500">Hệ thống luyện tập & kiểm tra trực tuyến</p>
         </div>
       </div>
@@ -39,7 +44,7 @@
       <!-- Trạng thái kết nối Google Sheets -->
       <div id="status-badge" class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600">
         <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" id="status-dot"></span>
-        <span id="status-text">Đang kết nối cơ sở dữ liệu...</span>
+        <span id="status-text">Đang kết nối dữ liệu...</span>
       </div>
     </div>
   </header>
@@ -50,6 +55,9 @@
     <!-- Screen 1: Nhập thông tin làm bài -->
     <section id="screen-setup" class="max-w-md w-full mx-auto bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-8 my-auto">
       <div class="text-center mb-6">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold mb-2">
+          <i data-lucide="award" class="w-3.5 h-3.5"></i> Biên soạn: Thầy Đạt - THCS Ngô Gia Tự
+        </div>
         <h2 class="text-2xl font-bold text-slate-800">Bắt Đầu Bài Làm</h2>
         <p class="text-slate-500 text-sm mt-1">Điền thông tin cá nhân để bắt đầu bài kiểm tra 40 câu</p>
       </div>
@@ -73,7 +81,7 @@
 
         <div class="bg-blue-50/60 p-3.5 rounded-xl border border-blue-100 text-xs text-blue-700 flex items-center gap-2">
           <i data-lucide="info" class="w-4 h-4 shrink-0 text-blue-600"></i>
-          <span>Bài thi gồm <strong>40 câu hỏi trắc nghiệm</strong> ngẫu nhiên, không giới hạn thời gian làm bài.</span>
+          <span>Bài thi gồm <strong>40 câu hỏi trắc nghiệm</strong> ngẫu nhiên. Câu hỏi và đáp án được xáo trộn tự động.</span>
         </div>
 
         <button type="submit" id="btn-start" disabled class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2 mt-2">
@@ -94,11 +102,12 @@
               <span class="text-xs font-semibold uppercase text-blue-600 tracking-wider">Câu hỏi</span>
               <h3 class="text-xl font-bold text-slate-800" id="current-q-title">Câu 1 / 40</h3>
             </div>
+            <span class="text-xs text-slate-400 font-medium hidden sm:inline-block">GV: Thầy Đạt - THCS Ngô Gia Tự</span>
           </div>
 
           <!-- Nội dung câu hỏi -->
           <div class="mb-6">
-            <p id="question-text" class="text-lg text-slate-800 font-medium leading-relaxed"></p>
+            <p id="question-text" class="text-lg text-slate-800 font-medium leading-relaxed whitespace-pre-line"></p>
           </div>
 
           <!-- Các lựa chọn -->
@@ -169,6 +178,11 @@
 
   </main>
 
+  <!-- Footer danh tính thầy Đạt -->
+  <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
+    <p>© Hệ thống Trắc nghiệm Giáo dục - Đóng góp bởi <strong>Thầy Đạt - THCS Ngô Gia Tự</strong></p>
+  </footer>
+
   <script>
     let rawQuestions = [];
     let activeQuestions = [];
@@ -207,14 +221,38 @@
       }
     }
 
+    // Hàm trộn mảng ngẫu nhiên
     function shuffleArray(array) {
       return [...array].sort(() => Math.random() - 0.5);
     }
 
     function startQuiz() {
-      // Mặc định chọn 40 câu ngẫu nhiên (hoặc tối đa số câu sẵn có)
       const targetCount = 40;
-      activeQuestions = shuffleArray(rawQuestions).slice(0, Math.min(targetCount, rawQuestions.length));
+      const selectedRaw = shuffleArray(rawQuestions).slice(0, Math.min(targetCount, rawQuestions.length));
+      
+      // Xáo trộn ngẫu nhiên đáp án A, B, C, D cho từng câu hỏi
+      activeQuestions = selectedRaw.map(q => {
+        const originalLetters = ['A', 'B', 'C', 'D'];
+        const correctText = q.options[originalLetters.indexOf(q.correct)]; // Lấy nội dung đáp án đúng chuẩn
+
+        // Tạo mảng danh sách các lựa chọn có nội dung
+        let optionsList = q.options.map((text, idx) => ({ text, originalLetter: originalLetters[idx] })).filter(item => item.text !== "");
+        
+        // Trộn ngẫu nhiên các lựa chọn
+        let shuffledOptions = shuffleArray(optionsList);
+
+        // Tìm vị trí chữ cái mới của đáp án đúng sau khi trộn
+        let newCorrectIndex = shuffledOptions.findIndex(item => item.text === correctText);
+        let newCorrectLetter = originalLetters[newCorrectIndex];
+
+        return {
+          question: q.question,
+          options: shuffledOptions.map(item => item.text),
+          correct: newCorrectLetter,
+          explanation: q.explanation
+        };
+      });
+
       userAnswers = {};
       currentIndex = 0;
 
@@ -229,7 +267,7 @@
       currentIndex = index;
       const q = activeQuestions[index];
 
-      document.getElementById('current-q-title').innerText = `Câu ${index + 1} / ${activeQuestions.length}`;
+      document.getElementById('current-q-title').innerText = `Câu ${index + 1} /${activeQuestions.length}`;
       document.getElementById('question-text').innerText = q.question;
 
       const container = document.getElementById('options-container');
@@ -251,9 +289,7 @@
         }`;
 
         btn.innerHTML = `
-          <span class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-            isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
-          }">${letter}</span>
+          <span class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${ isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600' }">${letter}</span>
           <span class="text-sm flex-1">${opt}</span>
         `;
         container.appendChild(btn);
@@ -366,36 +402,4 @@
           optionsHTML += `
             <div class="p-3 rounded-xl border text-sm flex items-center gap-2.5 ${optStyle}">
               <span class="font-bold">${letter}.</span>
-              <span>${opt}</span>
-              ${letter === q.correct ? '<i data-lucide="check" class="w-4 h-4 text-emerald-600 ml-auto"></i>' : ''}
-              ${letter === userAns && !isCorrect ? '<i data-lucide="x" class="w-4 h-4 text-rose-600 ml-auto"></i>' : ''}
-            </div>
-          `;
-        });
-
-        card.innerHTML = `
-          <div class="flex items-start justify-between gap-3 mb-3">
-            <h4 class="font-bold text-slate-800 text-sm">Câu ${idx + 1}: ${q.question}</h4>
-            <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
-              ${isCorrect ? 'Đúng' : 'Sai'}
-            </span>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">${optionsHTML}</div>
-          ${q.explanation ? `
-            <div class="mt-3 pt-3 border-t border-slate-200/60 text-xs text-slate-600 bg-white/60 p-3 rounded-xl">
-              <strong class="text-blue-700 block mb-1">💡 Lời giải chi tiết:</strong> ${q.explanation}
-            </div>
-          ` : ''}
-        `;
-        container.appendChild(card);
-      });
-      lucide.createIcons();
-    }
-
-    function restartQuiz() {
-      document.getElementById('screen-result').classList.add('hidden');
-      document.getElementById('screen-setup').classList.remove('hidden');
-    }
-  </script>
-</body>
-</html>
+              <span>${opt}</span>${letter === q.correct ? '<i data-lucide="check" class="w-4 h-4 text-emerald-600 ml-auto
