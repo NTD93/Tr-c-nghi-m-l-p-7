@@ -1,22 +1,257 @@
-function doGet() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var rows = sheet.getDataRange().getValues();
-  var headers = rows[0];
-  var data = [];
-  
-  for (var i = 1; i < rows.length; i++) {
-    var row = rows[i];
-    if (!row[1]) continue; // Bỏ qua dòng trống
-    data.push({
-      id: row[0] || i,
-      question: row[1],
-      options: [row[2], row[3], row[4], row[5]],
-      correct: (row[6] + '').trim().toUpperCase(),
-      explanation: row[7] || ''
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ Thống Trắc Nghiệm Online - EduQuiz</title>
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col">
+
+  <!-- ================= DÁN GOOGLE APPS SCRIPT URL CỦA BẠN VÀO ĐÂY ================= -->
+  <script>
+    // BẠN HÃY THAY THẾ LINK TRONG NGOẶC KÉP BẰNG URL APPS SCRIPT CỦA BẠN:
+    const GOOGLE_SHEETS_SCRIPT_URL = "DÁN_URL_GOOGLE_APPS_SCRIPT_CỦA_BẠN_VÀO_ĐÂY";
+  </script>
+  <!-- ============================================================================== -->
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="bg-blue-600 text-white p-2 rounded-xl shadow-md shadow-blue-500/20">
+          <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-slate-800 leading-tight">EduQuiz Online</h1>
+          <p class="text-xs text-slate-500">Hệ thống luyện tập & kiểm tra trực tuyến</p>
+        </div>
+      </div>
+
+      <!-- Trạng thái kết nối Google Sheets -->
+      <div id="status-badge" class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600">
+        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" id="status-dot"></span>
+        <span id="status-text">Đang kết nối cơ sở dữ liệu...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
+
+    <!-- Screen 1: Đăng nhập & Chọn cấu hình -->
+    <section id="screen-setup" class="max-w-xl w-full mx-auto bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-8 my-auto">
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">Bắt Đầu Bài Làm</h2>
+        <p class="text-slate-500 text-sm mt-1">Điền thông tin cá nhân và chọn số lượng câu hỏi để bắt đầu</p>
+      </div>
+
+      <form id="form-start" onsubmit="event.preventDefault(); startQuiz();" class="space-y-5">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Họ và tên học sinh *</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="student-name" required placeholder="Ví dụ: Nguyễn Văn A" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Lớp / Lớp học *</label>
+          <div class="relative">
+            <i data-lucide="book-open" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="student-class" required placeholder="Ví dụ: 9A1" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Số câu hỏi</label>
+            <select id="question-count" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition">
+              <option value="5">5 câu hỏi</option>
+              <option value="10" selected>10 câu hỏi</option>
+              <option value="15">15 câu hỏi</option>
+              <option value="20">20 câu hỏi</option>
+              <option value="all">Tất cả câu hỏi</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Thời gian</label>
+            <select id="time-limit" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition">
+              <option value="0">Không giới hạn</option>
+              <option value="5">5 phút</option>
+              <option value="10" selected>10 phút</option>
+              <option value="15">15 phút</option>
+              <option value="30">30 phút</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-start" disabled class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2 mt-4">
+          <span>Bắt Đầu Làm Bài</span>
+          <i data-lucide="arrow-right" class="w-5 h-5"></i>
+        </button>
+      </form>
+    </section>
+
+    <!-- Screen 2: Làm bài thi -->
+    <section id="screen-quiz" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+      <!-- Cột chính: Nội dung câu hỏi -->
+      <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between min-h-[500px]">
+        <div>
+          <!-- Tiến trình & Thời gian -->
+          <div class="flex justify-between items-center pb-4 border-b border-slate-100 mb-6">
+            <div>
+              <span class="text-xs font-semibold uppercase text-blue-600 tracking-wider">Câu hỏi</span>
+              <h3 class="text-xl font-bold text-slate-800" id="current-q-title">Câu 1 / 10</h3>
+            </div>
+            <div id="timer-box" class="flex items-center gap-2 bg-amber-50 text-amber-700 font-mono font-bold px-4 py-2 rounded-xl border border-amber-200/60 text-sm">
+              <i data-lucide="clock" class="w-4 h-4"></i>
+              <span id="timer-text">10:00</span>
+            </div>
+          </div>
+
+          <!-- Nội dung câu hỏi -->
+          <div class="mb-6">
+            <p id="question-text" class="text-lg text-slate-800 font-medium leading-relaxed"></p>
+          </div>
+
+          <!-- Các lựa chọn -->
+          <div id="options-container" class="space-y-3"></div>
+        </div>
+
+        <!-- Thanh điều hướng dưới -->
+        <div class="flex justify-between items-center pt-6 border-t border-slate-100 mt-6">
+          <button onclick="prevQuestion()" id="btn-prev" class="px-4 py-2.5 rounded-xl border border-slate-200 font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1.5 text-sm">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i> Câu trước
+          </button>
+          
+          <button onclick="nextQuestion()" id="btn-next" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition flex items-center gap-1.5 text-sm">
+            Câu tiếp <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cột phụ: Question Palette & Nộp bài -->
+      <div class="bg-white rounded-2xl shadow-lg border border-slate-100 p-5 flex flex-col justify-between">
+        <div>
+          <h4 class="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2">
+            <i data-lucide="grid" class="w-4 h-4 text-blue-600"></i> Danh sách câu hỏi
+          </h4>
+          <div id="palette-container" class="grid grid-cols-5 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1 mb-6"></div>
+        </div>
+
+        <button onclick="confirmSubmit()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
+          <i data-lucide="check-circle" class="w-5 h-5"></i> Nộp Bài Thi
+        </button>
+      </div>
+    </section>
+
+    <!-- Screen 3: Kết quả -->
+    <section id="screen-result" class="hidden max-w-3xl w-full mx-auto space-y-6">
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-8 text-center">
+        <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i data-lucide="award" class="w-10 h-10"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-800">Kết Quả Bài Làm</h2>
+        <p class="text-slate-500 text-sm mt-1" id="res-student-info"></p>
+
+        <!-- Thống kê điểm -->
+        <div class="grid grid-cols-3 gap-4 my-6">
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <span class="text-xs text-slate-500 uppercase font-semibold">Điểm số</span>
+            <p class="text-2xl font-bold text-blue-600 mt-1" id="res-score">0/10</p>
+          </div>
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <span class="text-xs text-slate-500 uppercase font-semibold">Số câu đúng</span>
+            <p class="text-2xl font-bold text-emerald-600 mt-1" id="res-correct">0</p>
+          </div>
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <span class="text-xs text-slate-500 uppercase font-semibold">Thời gian</span>
+            <p class="text-2xl font-bold text-slate-700 mt-1" id="res-time">00:00</p>
+          </div>
+        </div>
+
+        <button onclick="restartQuiz()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition inline-flex items-center gap-2 text-sm">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Làm Bài Khác
+        </button>
+      </div>
+
+      <!-- Chi tiết đáp án -->
+      <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-8">
+        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <i data-lucide="file-text" class="w-5 h-5 text-blue-600"></i> Xem lại đáp án & Lời giải
+        </h3>
+        <div id="review-container" class="space-y-6"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Script ứng dụng -->
+  <script>
+    // Khởi tạo các biến toàn cục
+    let rawQuestions = [];
+    let activeQuestions = [];
+    let userAnswers = {};
+    let currentIndex = 0;
+    let timerInterval = null;
+    let secondsLeft = 0;
+    let timeSpent = 0;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      fetchQuestionsFromSheets();
     });
-  }
-  
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+
+    // Tải ngân hàng câu hỏi tự động từ Google Sheets
+    async function fetchQuestionsFromSheets() {
+      const statusBadge = document.getElementById('status-badge');
+      const statusDot = document.getElementById('status-dot');
+      const statusText = document.getElementById('status-text');
+      const btnStart = document.getElementById('btn-start');
+
+      if (!GOOGLE_SHEETS_SCRIPT_URL || GOOGLE_SHEETS_SCRIPT_URL.includes("DÁN_URL")) {
+        statusDot.className = "w-2 h-2 rounded-full bg-red-500";
+        statusText.innerText = "Chưa dán URL Google Apps Script";
+        statusBadge.className = "flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-full text-xs font-medium text-red-600";
+        return;
+      }
+
+      try {
+        const response = await fetch(GOOGLE_SHEETS_SCRIPT_URL);
+        const data = await response.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+          rawQuestions = data;
+          statusDot.className = "w-2 h-2 rounded-full bg-emerald-500";
+          statusText.innerText = `Đã sẵn sàng (${rawQuestions.length} câu hỏi)`;
+          statusBadge.className = "flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full text-xs font-medium text-emerald-700";
+          btnStart.disabled = false;
+        } else {
+          throw new Error("Dữ liệu trống");
+        }
+      } catch (err) {
+        console.error(err);
+        statusDot.className = "w-2 h-2 rounded-full bg-red-500";
+        statusText.innerText = "Lỗi kết nối cơ sở dữ liệu";
+        statusBadge.className = "flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-full text-xs font-medium text-red-600";
+      }
+    }
+
+    // Trộn ngẫu nhiên danh sách câu hỏi
+    function shuffleArray(array) {
+      return [...array].sort(() => Math.random() - 0.5);
+    }
+
+    // Bắt đầu làm bài
+    function startQuiz() {
+      const countVal = document.getElementById('question
