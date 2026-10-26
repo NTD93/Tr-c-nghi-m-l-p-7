@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hệ Thống Trắc Nghiệm Online - Thầy Đạt (THCS Ngô Gia Tự)</title>
-  <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,15 +12,14 @@
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    u { text-decoration: underline; text-underline-offset: 3px; font-weight: 600; color: #2563eb; }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col">
 
-  <!-- ================= GOOGLE APPS SCRIPT URL CỦA THẦY ================= -->
   <script>
     const GOOGLE_SHEETS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybtBmrxpoL3F-OQbbGEvMU3oN25LkWmXO9TclVoF02ACDXBESdgC01clO-t4LobS1g-Q/exec";
   </script>
-  <!-- ============================================================================== -->
 
   <!-- Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
@@ -41,7 +39,6 @@
         </div>
       </div>
 
-      <!-- Trạng thái kết nối -->
       <div id="status-badge" class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600">
         <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" id="status-dot"></span>
         <span id="status-text">Đang kết nối dữ liệu...</span>
@@ -52,7 +49,7 @@
   <!-- Main Container -->
   <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
 
-    <!-- Screen 1: Nhập thông tin làm bài -->
+    <!-- Screen 1: Nhập thông tin -->
     <section id="screen-setup" class="max-w-md w-full mx-auto bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-8 my-auto">
       <div class="text-center mb-6">
         <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold mb-2">
@@ -104,7 +101,7 @@
           </div>
 
           <div class="mb-6">
-            <p id="question-text" class="text-lg text-slate-800 font-medium leading-relaxed whitespace-pre-line"></p>
+            <div id="question-text" class="text-lg text-slate-800 font-medium leading-relaxed whitespace-pre-line"></div>
           </div>
 
           <div id="options-container" class="space-y-3"></div>
@@ -185,6 +182,12 @@
       fetchQuestionsFromSheets();
     });
 
+    // Hàm tự động đổi _từ_ thành <u>từ</u>
+    function formatUnderlineText(str) {
+      if (!str) return '';
+      return str.replace(/_([^_]+)_/g, '<u>$1</u>');
+    }
+
     async function fetchQuestionsFromSheets() {
       const statusBadge = document.getElementById('status-badge');
       const statusDot = document.getElementById('status-dot');
@@ -195,7 +198,6 @@
         const response = await fetch(GOOGLE_SHEETS_SCRIPT_URL);
         const data = await response.json();
 
-        // Lọc bỏ những dòng câu hỏi bị trống
         const validQuestions = data.filter(q => q.question && q.question.trim() !== "");
 
         if (Array.isArray(validQuestions) && validQuestions.length > 0) {
@@ -225,20 +227,13 @@
       
       activeQuestions = selectedRaw.map(q => {
         const originalLetters = ['A', 'B', 'C', 'D'];
-        // Lấy chữ cái đáp án chuẩn (viết hoa)
         const correctLetter = (q.correct || 'A').toString().trim().toUpperCase();
         const correctIndex = originalLetters.indexOf(correctLetter);
-        
-        // Lấy văn bản của đáp án đúng
         const correctText = (correctIndex !== -1 && q.options[correctIndex]) ? q.options[correctIndex] : q.options[0];
 
-        // Tạo mảng lựa chọn hợp lệ
         let optionsList = q.options.map((text, idx) => ({ text, originalLetter: originalLetters[idx] })).filter(item => item.text !== "" && item.text !== null && item.text !== undefined);
-        
-        // Trộn ngẫu nhiên đáp án
         let shuffledOptions = shuffleArray(optionsList);
 
-        // Tìm lại vị trí chữ cái mới của đáp án đúng
         let newCorrectIndex = shuffledOptions.findIndex(item => item.text === correctText);
         let newCorrectLetter = originalLetters[newCorrectIndex !== -1 ? newCorrectIndex : 0];
 
@@ -265,7 +260,7 @@
       const q = activeQuestions[index];
 
       document.getElementById('current-q-title').innerText = `Câu ${index + 1} / ${activeQuestions.length}`;
-      document.getElementById('question-text').innerText = q.question;
+      document.getElementById('question-text').innerHTML = formatUnderlineText(q.question);
 
       const container = document.getElementById('options-container');
       container.innerHTML = '';
@@ -289,7 +284,7 @@
           <span class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
             isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
           }">${letter}</span>
-          <span class="text-sm flex-1">${opt}</span>
+          <span class="text-sm flex-1">${formatUnderlineText(opt)}</span>
         `;
         container.appendChild(btn);
       });
@@ -401,7 +396,7 @@
           optionsHTML += `
             <div class="p-3 rounded-xl border text-sm flex items-center gap-2.5 ${optStyle}">
               <span class="font-bold">${letter}.</span>
-              <span>${opt}</span>
+              <span>${formatUnderlineText(opt)}</span>
               ${letter === q.correct ? '<i data-lucide="check" class="w-4 h-4 text-emerald-600 ml-auto"></i>' : ''}
               ${letter === userAns && !isCorrect ? '<i data-lucide="x" class="w-4 h-4 text-rose-600 ml-auto"></i>' : ''}
             </div>
@@ -410,7 +405,7 @@
 
         card.innerHTML = `
           <div class="flex items-start justify-between gap-3 mb-3">
-            <h4 class="font-bold text-slate-800 text-sm">Câu ${idx + 1}: ${q.question}</h4>
+            <h4 class="font-bold text-slate-800 text-sm">Câu ${idx + 1}: ${formatUnderlineText(q.question)}</h4>
             <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
               ${isCorrect ? 'Đúng' : 'Sai'}
             </span>
@@ -418,7 +413,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">${optionsHTML}</div>
           ${q.explanation ? `
             <div class="mt-3 pt-3 border-t border-slate-200/60 text-xs text-slate-600 bg-white/60 p-3 rounded-xl">
-              <strong class="text-blue-700 block mb-1">💡 Lời giải chi tiết:</strong> ${q.explanation}
+              <strong class="text-blue-700 block mb-1">💡 Lời giải chi tiết:</strong> ${formatUnderlineText(q.explanation)}
             </div>
           ` : ''}
         `;
